@@ -1,26 +1,25 @@
 use itertools::Itertools;
 
 pub fn part_one(input: &str) -> Option<u32> {
-    let group_sums = input.split("\n\n").map(|group| {
-        group
-            .lines()
-            .map(|calorie_str| calorie_str.parse::<u32>().unwrap())
-            .sum::<u32>()
-    });
-
-    group_sums.max()
+    let group_sums = get_group_sums(input);
+    group_sums.into_iter().max()
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    let group_sums = input.split("\n\n").map(|group| {
-        group
-            .lines()
-            .map(|calorie_str| calorie_str.parse::<u32>().unwrap())
-            .sum::<u32>()
-    });
+    let group_sums = get_group_sums(input);
+    Some(group_sums.into_iter().sorted().rev().take(3).sum())
+}
 
-    let a: u32 = group_sums.sorted().rev().take(3).sum();
-    Some(a)
+fn get_group_sums(input: &str) -> Vec<u32> {
+    input
+        .split("\n\n")
+        .map(|group| {
+            group
+                .lines()
+                .map(|calories_str| calories_str.parse::<u32>().unwrap())
+                .sum::<u32>()
+        })
+        .collect_vec()
 }
 
 fn main() {
