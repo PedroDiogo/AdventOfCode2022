@@ -1,14 +1,16 @@
-use std::collections::HashMap;
+use std::str::FromStr;
 
 use itertools::Itertools;
+use strum::IntoEnumIterator;
+use strum_macros::{EnumIter, EnumString};
 
 pub fn part_one(input: &str) -> Option<usize> {
     Some(
         input
             .lines()
-            .map(|line| parse_line(line))
+            .map(|line| parse_line(line, |second_col_str| Move::from_str(second_col_str).ok()))
             .map(|(other_player, my_move)| {
-                shape_score(&my_move) + game_score(&other_player, &my_move)
+                my_move as usize + game_result(&other_player, &my_move) as usize
             })
             .sum(),
     )
@@ -18,99 +20,58 @@ pub fn part_two(input: &str) -> Option<usize> {
     Some(
         input
             .lines()
-            .map(|line| parse_line_v2(line))
+            .map(|line| parse_line(line, |second_col_str| Result::from_str(second_col_str).ok()))
             .map(|(other_player, result)| {
-                shape_score(&find_my_move(&other_player, &result)) + game_score_v2(&result)
+                find_my_move(&other_player, &result) as usize + result as usize
             })
             .sum(),
     )
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, EnumString, EnumIter)]
 enum Move {
-    Rock,
-    Paper,
-    Scissors,
+    #[strum(serialize = "A", serialize = "X")]
+    Rock = 1,
+    #[strum(serialize = "B", serialize = "Y")]
+    Paper = 2,
+    #[strum(serialize = "C", serialize = "Z")]
+    Scissors = 3,
 }
-#[derive(Debug, Clone, Copy, PartialEq)]
+
+#[derive(Debug, Clone, Copy, PartialEq, EnumString)]
 enum Result {
-    Lose,
-    Draw,
-    Win,
+    #[strum(serialize = "X")]
+    Lose = 0,
+    #[strum(serialize = "Y")]
+    Draw = 3,
+    #[strum(serialize = "Z")]
+    Win = 6,
 }
 
-fn parse_line(line: &str) -> (Move, Move) {
-    let mapping = HashMap::from([
-        ("A", Move::Rock),
-        ("X", Move::Rock),
-        ("B", Move::Paper),
-        ("Y", Move::Paper),
-        ("C", Move::Scissors),
-        ("Z", Move::Scissors),
-    ]);
-
+fn parse_line<F: Fn(&str) -> Option<Sc>, Sc>(line: &str, second_col_mapping_fn: F) -> (Move, Sc) {
     let moves = line.split_whitespace().collect_vec();
-    (mapping[(moves[0])], mapping[moves[1]])
+    (
+        Move::from_str(moves[0]).unwrap(),
+        second_col_mapping_fn(moves[1]).unwrap(),
+    )
 }
 
-fn parse_line_v2(line: &str) -> (Move, Result) {
-    let move_mapping =
-        HashMap::from([("A", Move::Rock), ("B", Move::Paper), ("C", Move::Scissors)]);
-    let result_mapping =
-        HashMap::from([("X", Result::Lose), ("Y", Result::Draw), ("Z", Result::Win)]);
-
-    let moves = line.split_whitespace().collect_vec();
-    (move_mapping[(moves[0])], result_mapping[moves[1]])
-}
-
-fn shape_score(my_move: &Move) -> usize {
-    match my_move {
-        Move::Rock => 1,
-        Move::Paper => 2,
-        Move::Scissors => 3,
-    }
-}
-
-fn game_score_v2(result: &Result) -> usize {
-    match result {
-        Result::Lose => 0,
-        Result::Draw => 3,
-        Result::Win => 6,
-    }
-}
-
-fn game_score(other_move: &Move, my_move: &Move) -> usize {
+fn game_result(other_move: &Move, my_move: &Move) -> Result {
     if other_move == my_move {
-        return 3;
+        return Result::Draw;
     }
 
-    if (other_move == &Move::Rock && my_move == &Move::Scissors)
-        || (other_move == &Move::Paper && my_move == &Move::Rock)
-        || (other_move == &Move::Scissors && my_move == &Move::Paper)
-    {
-        return 0;
+    if (*my_move as usize) % 3 + 1 == *other_move as usize {
+        return Result::Lose;
     }
 
-    6
+    Result::Win
 }
 
 fn find_my_move(other_move: &Move, result: &Result) -> Move {
-    if result == &Result::Draw {
-        return other_move.clone();
-    }
-
-    if result == &Result::Lose {
-        return match other_move {
-            &Move::Rock => Move::Scissors,
-            &Move::Paper => Move::Rock,
-            &Move::Scissors => Move::Paper,
-        };
-    }
-    return match other_move {
-        &Move::Rock => Move::Paper,
-        &Move::Paper => Move::Scissors,
-        &Move::Scissors => Move::Rock,
-    };
+    Move::iter()
+        .find(|my_move| &game_result(other_move, my_move) == result)
+        .unwrap()
 }
 
 fn main() {
