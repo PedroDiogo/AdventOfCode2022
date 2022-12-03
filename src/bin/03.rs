@@ -1,33 +1,51 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, hash::Hash};
+
+use itertools::Itertools;
 
 pub fn part_one(input: &str) -> Option<usize> {
-    // let input = String::from(input);
     input
         .lines()
+        .map(|rucksack| {
+            vec![
+                rucksack.get(0..rucksack.len() / 2).unwrap(),
+                rucksack.get(rucksack.len() / 2..rucksack.len()).unwrap(),
+            ]
+        })
         .map(|rucksack| find_duplicate_item(rucksack))
         .map(|duplicate_item| priority(&duplicate_item.unwrap()))
         .sum()
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<usize> {
+    input
+        .lines()
+        .chunks(3)
+        .into_iter()
+        .map(|group| find_duplicate_item(group.collect_vec()))
+        .map(|duplicate_item| priority(&duplicate_item.unwrap()))
+        .sum()
 }
 
-fn find_duplicate_item(input: &str) -> Option<char> {
-    let halves = (
-        input.get(0..input.len() / 2).unwrap(),
-        input.get(input.len() / 2..input.len()).unwrap(),
-    );
+fn find_duplicate_item(input: Vec<&str>) -> Option<char> {
+    let mut duplicate_items = HashSet::<char>::new();
 
-    let seen_items = halves
-        .0
-        .chars()
-        .fold(HashSet::<char>::new(), |mut seen_items, item| {
-            seen_items.insert(item);
+    for rucksack in input {
+        let seen_items = rucksack
+            .chars()
+            .fold(HashSet::<char>::new(), |mut seen_items, item| {
+                seen_items.insert(item);
+                seen_items
+            });
+        duplicate_items = if duplicate_items.is_empty() {
             seen_items
-        });
-
-    halves.1.chars().find(|item| seen_items.contains(item))
+        } else {
+            duplicate_items
+                .intersection(&seen_items)
+                .map(|c| *c)
+                .collect()
+        }
+    }
+    duplicate_items.iter().next().copied()
 }
 
 fn priority(input: &char) -> Option<usize> {
@@ -59,6 +77,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 3);
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input), Some(70));
     }
 }
