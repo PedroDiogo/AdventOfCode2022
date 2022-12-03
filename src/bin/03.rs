@@ -1,6 +1,6 @@
-use std::{collections::HashSet, hash::Hash};
-
+use advent_of_code::helpers::First;
 use itertools::Itertools;
+use std::collections::HashSet;
 
 pub fn part_one(input: &str) -> Option<usize> {
     input
@@ -11,8 +11,8 @@ pub fn part_one(input: &str) -> Option<usize> {
                 rucksack.get(rucksack.len() / 2..rucksack.len()).unwrap(),
             ]
         })
-        .map(|rucksack| find_duplicate_item(rucksack))
-        .map(|duplicate_item| priority(&duplicate_item.unwrap()))
+        .filter_map(|rucksack| find_duplicate_items(rucksack))
+        .map(|duplicate_item| priority(duplicate_item.first()))
         .sum()
 }
 
@@ -21,41 +21,28 @@ pub fn part_two(input: &str) -> Option<usize> {
         .lines()
         .chunks(3)
         .into_iter()
-        .map(|group| find_duplicate_item(group.collect_vec()))
-        .map(|duplicate_item| priority(&duplicate_item.unwrap()))
+        .map(|group| group.collect_vec())
+        .filter_map(|group| find_duplicate_items(group))
+        .map(|duplicate_item| priority(duplicate_item.first()))
         .sum()
 }
 
-fn find_duplicate_item(input: Vec<&str>) -> Option<char> {
-    let mut duplicate_items = HashSet::<char>::new();
-
-    for rucksack in input {
-        let seen_items = rucksack
-            .chars()
-            .fold(HashSet::<char>::new(), |mut seen_items, item| {
-                seen_items.insert(item);
-                seen_items
-            });
-        duplicate_items = if duplicate_items.is_empty() {
-            seen_items
-        } else {
-            duplicate_items
-                .intersection(&seen_items)
-                .map(|c| *c)
-                .collect()
-        }
-    }
-    duplicate_items.iter().next().copied()
+fn find_duplicate_items(input: Vec<&str>) -> Option<HashSet<char>> {
+    input
+        .into_iter()
+        .map(|rucksack| -> HashSet<char> { HashSet::from_iter(rucksack.chars()) })
+        .reduce(|duplicates, seen_types| duplicates.intersection(&seen_types).map(|c| *c).collect())
 }
 
-fn priority(input: &char) -> Option<usize> {
-    if *input >= 'A' && *input <= 'Z' {
-        Some(*input as usize - 'A' as usize + 27)
-    } else if *input >= 'a' && *input <= 'z' {
-        Some(*input as usize - 'a' as usize + 1)
-    } else {
-        None
+fn priority(input: Option<&char>) -> Option<usize> {
+    if let Some(input) = input {
+        if *input >= 'A' && *input <= 'Z' {
+            return Some(*input as usize - 'A' as usize + 27);
+        } else if *input >= 'a' && *input <= 'z' {
+            return Some(*input as usize - 'a' as usize + 1);
+        }
     }
+    None
 }
 
 fn main() {
