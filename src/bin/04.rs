@@ -1,5 +1,6 @@
 use std::ops::RangeInclusive;
 
+use advent_of_code::helpers::{FullyContains, Overlaps};
 use itertools::Itertools;
 
 pub fn part_one(input: &str) -> Option<usize> {
@@ -8,7 +9,7 @@ pub fn part_one(input: &str) -> Option<usize> {
             .lines()
             .map(|line| line.split(&[',', '-'][..]).collect_vec())
             .map(|ranges| to_ranges(&ranges))
-            .filter(|(range1, range2)| fully_contains(&range1, &range2))
+            .filter(|(range1, range2)| range1.fully_contains(&range2))
             .count(),
     )
 }
@@ -19,7 +20,7 @@ pub fn part_two(input: &str) -> Option<usize> {
             .lines()
             .map(|line| line.split(&[',', '-'][..]).collect_vec())
             .map(|ranges| to_ranges(&ranges))
-            .filter(|(range1, range2)| overlaps(&range1, &range2))
+            .filter(|(range1, range2)| range1.overlaps(&range2))
             .count(),
     )
 }
@@ -34,19 +35,6 @@ fn to_ranges(ranges: &Vec<&str>) -> (RangeInclusive<usize>, RangeInclusive<usize
         RangeInclusive::new(ranges[0], ranges[1]),
         RangeInclusive::new(ranges[2], ranges[3]),
     )
-}
-
-fn fully_contains(range1: &RangeInclusive<usize>, range2: &RangeInclusive<usize>) -> bool {
-    let a = range1.clone().count();
-    let b = range2.clone().count();
-    let largest_range = if a > b { range1 } else { range2 };
-    let smallest_range = if a <= b { range1 } else { range2 };
-
-    largest_range.start() <= smallest_range.start() && largest_range.end() >= smallest_range.end()
-}
-
-fn overlaps(range1: &RangeInclusive<usize>, range2: &RangeInclusive<usize>) -> bool {
-    !(range1.start() > range2.end() || range2.start() > range1.end())
 }
 
 fn main() {
