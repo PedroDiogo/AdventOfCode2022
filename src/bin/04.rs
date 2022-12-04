@@ -14,7 +14,14 @@ pub fn part_one(input: &str) -> Option<usize> {
 }
 
 pub fn part_two(input: &str) -> Option<usize> {
-    None
+    Some(
+        input
+            .lines()
+            .map(|line| line.split(&[',', '-'][..]).collect_vec())
+            .map(|ranges| to_ranges(&ranges))
+            .filter(|(range1, range2)| overlaps(&range1, &range2))
+            .count(),
+    )
 }
 
 fn to_ranges(ranges: &Vec<&str>) -> (RangeInclusive<usize>, RangeInclusive<usize>) {
@@ -37,6 +44,11 @@ fn fully_contains(range1: &RangeInclusive<usize>, range2: &RangeInclusive<usize>
 
     largest_range.start() <= smallest_range.start() && largest_range.end() >= smallest_range.end()
 }
+
+fn overlaps(range1: &RangeInclusive<usize>, range2: &RangeInclusive<usize>) -> bool {
+    !(range1.start() > range2.end() || range2.start() > range1.end())
+}
+
 fn main() {
     let input = &advent_of_code::read_file("inputs", 4);
     advent_of_code::solve!(1, part_one, input);
@@ -56,6 +68,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 4);
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input), Some(4));
     }
 }
