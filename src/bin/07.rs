@@ -1,79 +1,61 @@
-use itertools::Itertools;
+use std::vec;
 
 #[derive(Debug)]
-struct Node<T>
+struct Directory<T>
 where
     T: PartialEq,
 {
     idx: usize,
-    val: T,
+    size: T,
     parent: Option<usize>,
     children: Vec<usize>,
 }
 
-pub fn part_one(input: &str) -> Option<usize> {
-    let input = input.split("$").map(|l| l.trim()).filter(|i| !i.is_empty());
-    let mut filesystem = vec![Node {
-        idx: 0,
-        val: 0,
-        parent: None,
-        children: vec![],
-    }];
-    let mut current_directory = 0;
-
-    for command_output in input {
-        let mut command_output = command_output.lines();
-        let command = command_output.next().unwrap();
-
-        if command == "ls" {
-            for ls_line in command_output {
-                if let Some(size) = ls_line
-                    .split_whitespace()
-                    .next()
-                    .unwrap()
-                    .parse::<usize>()
-                    .ok()
-                {
-                    filesystem[current_directory].val += size;
-                }
-            }
-        } else {
-            match command.split_whitespace().last() {
-                Some("..") => current_directory = filesystem[current_directory].parent.unwrap(),
-                Some("/") => current_directory = 0,
-                _ => {
-                    let new_directory = Node {
-                        idx: filesystem.len(),
-                        val: 0,
-                        parent: Some(current_directory),
-                        children: vec![],
-                    };
-                    let new_idx = new_directory.idx;
-                    filesystem[current_directory].children.push(new_idx);
-                    filesystem.push(new_directory);
-                    current_directory = new_idx;
-                }
-            }
+impl<T> Directory<T>
+where
+    T: PartialEq,
+{
+    fn new(idx: usize, size: T, parent: Option<usize>) -> Directory<T> {
+        Directory {
+            idx: idx,
+            size: size,
+            parent: parent,
+            children: vec![],
         }
     }
+}
+
+type Filesystem = Vec<Directory<usize>>;
+const ROOT_DIRECTORY: usize = 0;
+
+pub fn part_one(input: &str) -> Option<usize> {
+    let filesystem = create_filesystem_from_input(input);
     Some(
         filesystem
             .iter()
-            .map(|directory| calculate_total_size(&filesystem, directory.idx))
+            .map(|directory| calculate_directory_total_size(&filesystem, directory.idx))
             .filter(|total_size| *total_size <= 100000)
             .sum(),
     )
 }
 
 pub fn part_two(input: &str) -> Option<usize> {
+    let filesystem = create_filesystem_from_input(input);
+    let root_directory_size = calculate_directory_total_size(&filesystem, 0);
+    let need_size = root_directory_size - (70000000 - 30000000);
+
+    filesystem
+        .iter()
+        .map(|directory| calculate_directory_total_size(&filesystem, directory.idx))
+        .filter(|directory_total_size| *directory_total_size >= need_size)
+        .min()
+}
+
+fn create_filesystem_from_input(input: &str) -> Filesystem {
+    let mut filesystem = vec![Directory::new(ROOT_DIRECTORY, 0, None)];
+    let mut current_directory = ROOT_DIRECTORY;
+
     let input = input.split("$").map(|l| l.trim()).filter(|i| !i.is_empty());
-    let mut filesystem = vec![Node {
-        idx: 0,
-        val: 0,
-        parent: None,
-        children: vec![],
-    }];
-    let mut current_directory = 0;
 
     for command_output in input {
         let mut command_output = command_output.lines();
@@ -81,27 +63,17 @@ pub fn part_two(input: &str) -> Option<usize> {
 
         if command == "ls" {
             for ls_line in command_output {
-                if let Some(size) = ls_line
-                    .split_whitespace()
-                    .next()
-                    .unwrap()
-                    .parse::<usize>()
-                    .ok()
-                {
-                    filesystem[current_directory].val += size;
+                if let Some(file_size) = get_file_size_from_line(ls_line) {
+                    filesystem[current_directory].size += file_size;
                 }
             }
         } else {
             match command.split_whitespace().last() {
                 Some("..") => current_directory = filesystem[current_directory].parent.unwrap(),
-                Some("/") => current_directory = 0,
+                Some("/") => current_directory = ROOT_DIRECTORY,
                 _ => {
-                    let new_directory = Node {
-                        idx: filesystem.len(),
-                        val: 0,
-                        parent: Some(current_directory),
-                        children: vec![],
-                    };
+                    let new_directory =
+                        Directory::new(filesystem.len(), 0, Some(current_directory));
                     let new_idx = new_directory.idx;
                     filesystem[current_directory].children.push(new_idx);
                     filesystem.push(new_directory);
@@ -110,29 +82,20 @@ pub fn part_two(input: &str) -> Option<usize> {
             }
         }
     }
-
-    let total_sizes = filesystem
-        .iter()
-        .map(|directory| calculate_total_size(&filesystem, directory.idx))
-        .collect_vec();
-
-    let root_file_size = total_sizes.iter().max().unwrap();
-    let unused = 70000000 - root_file_size;
-    let need = 30000000 - unused;
-
-    total_sizes
-        .into_iter()
-        .filter(|total_size| *total_size >= need)
-        .min()
+    filesystem
 }
 
-fn calculate_total_size(filesystem: &[Node<usize>], node: usize) -> usize {
-    let a: usize = filesystem[node]
-        .children
-        .iter()
-        .map(|child| calculate_total_size(filesystem, *child))
-        .sum();
-    return filesystem[node].val + a;
+fn get_file_size_from_line(line: &str) -> Option<usize> {
+    line.split_whitespace().next()?.parse::<usize>().ok()
+}
+
+fn calculate_directory_total_size(filesystem: &[Directory<usize>], directory: usize) -> usize {
+    return filesystem[directory].size
+        + filesystem[directory]
+            .children
+            .iter()
+            .map(|child| calculate_directory_total_size(filesystem, *child))
+            .sum::<usize>();
 }
 
 fn main() {
