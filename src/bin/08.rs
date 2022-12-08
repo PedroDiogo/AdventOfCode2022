@@ -88,7 +88,88 @@ pub fn part_one(input: &str) -> Option<usize> {
 }
 
 pub fn part_two(input: &str) -> Option<usize> {
-    None
+    let input = input
+        .lines()
+        .map(|line| line.chars().map(|c| c as u8 - '0' as u8).collect_vec())
+        .collect_vec();
+
+    let (y_max, x_max) = (input.len(), input.first().unwrap().len());
+
+    let mut visible = vec![vec![(0, 0, 0, 0); x_max]; y_max];
+
+    // let x = 2;
+    // let y = 3;
+    // {
+    //     {
+    for x in 0..x_max {
+        for y in 0..y_max {
+            // Looking left
+            let mut found = false;
+            for i in (0..x).rev() {
+                if input[y][i] >= input[y][x] {
+                    visible[y][x].0 = x - i;
+                    found = true;
+                    break;
+                }
+            }
+            if !found {
+                visible[y][x].0 = x;
+            }
+            // Looking right
+            // 0 1 2 3 4
+            let mut found = false;
+            for i in x + 1..x_max {
+                if input[y][i] >= input[y][x] {
+                    visible[y][x].1 = i - x;
+                    found = true;
+                    break;
+                }
+            }
+            if !found {
+                visible[y][x].1 = x_max - (x + 1);
+            }
+            // Looking down
+            // 0
+            // 1
+            // 2
+            // 3
+            // 4
+            let mut found = false;
+            for i in y + 1..y_max {
+                if input[i][x] >= input[y][x] {
+                    visible[y][x].2 = i - y;
+                    found = true;
+                    break;
+                }
+            }
+            if !found {
+                visible[y][x].2 = y_max - (y + 1);
+            }
+            // Looking up
+            // 0
+            // 1
+            // 2
+            // 3
+            // 4
+            let mut found = false;
+            for i in (0..y).rev() {
+                if input[i][x] >= input[y][x] {
+                    visible[y][x].3 = y - i;
+                    found = true;
+                    break;
+                }
+            }
+            if !found {
+                visible[y][x].3 = y;
+            }
+        }
+    }
+
+    visible
+        .into_iter()
+        .flatten()
+        .map(|v| v.0 * v.1 * v.2 * v.3)
+        .max()
 }
 
 fn main() {
@@ -103,7 +184,7 @@ mod tests {
 
     #[test]
     fn test() {
-        println!("{:?}", (0..10).rev().collect_vec());
+        println!("{:?}", (10..0).collect_vec());
     }
     #[test]
     fn test_part_one() {
@@ -114,6 +195,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 8);
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input), Some(8));
     }
 }
