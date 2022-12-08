@@ -61,23 +61,6 @@ pub fn part_one(input: &str) -> Option<usize> {
         }
     }
 
-    let a = visible
-        .iter()
-        // .flatten()
-        .map(|l| l.iter().map(|v| v.0 || v.1 || v.2 || v.3).collect_vec())
-        .collect_vec();
-
-    for y in 0..y_max {
-        let line = a[y]
-            .iter()
-            .map(|v| match v {
-                true => 'v',
-                _ => 'x',
-            })
-            .join("");
-        println!("{}", line);
-    }
-
     Some(
         visible
             .iter()
@@ -97,10 +80,6 @@ pub fn part_two(input: &str) -> Option<usize> {
 
     let mut visible = vec![vec![(0, 0, 0, 0); x_max]; y_max];
 
-    // let x = 2;
-    // let y = 3;
-    // {
-    //     {
     for x in 0..x_max {
         for y in 0..y_max {
             // Looking left
@@ -116,7 +95,6 @@ pub fn part_two(input: &str) -> Option<usize> {
                 visible[y][x].0 = x;
             }
             // Looking right
-            // 0 1 2 3 4
             let mut found = false;
             for i in x + 1..x_max {
                 if input[y][i] >= input[y][x] {
@@ -129,11 +107,6 @@ pub fn part_two(input: &str) -> Option<usize> {
                 visible[y][x].1 = x_max - (x + 1);
             }
             // Looking down
-            // 0
-            // 1
-            // 2
-            // 3
-            // 4
             let mut found = false;
             for i in y + 1..y_max {
                 if input[i][x] >= input[y][x] {
@@ -146,11 +119,6 @@ pub fn part_two(input: &str) -> Option<usize> {
                 visible[y][x].2 = y_max - (y + 1);
             }
             // Looking up
-            // 0
-            // 1
-            // 2
-            // 3
-            // 4
             let mut found = false;
             for i in (0..y).rev() {
                 if input[i][x] >= input[y][x] {
@@ -182,10 +150,6 @@ fn main() {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test() {
-        println!("{:?}", (10..0).collect_vec());
-    }
     #[test]
     fn test_part_one() {
         let input = advent_of_code::read_file("examples", 8);
