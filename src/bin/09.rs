@@ -2,45 +2,18 @@ use std::collections::{HashSet, VecDeque};
 
 type Position = (isize, isize);
 pub fn part_one(input: &str) -> Option<usize> {
-    let mut visited = HashSet::<Position>::from([(0, 0)]);
-    let mut head_position: Position = (0, 0);
-    let mut tail_position: Position = (0, 0);
-
-    for motion in input.lines() {
-        let mut motion = motion.split_whitespace();
-        let direction = motion.next();
-        let times = motion.next()?.parse::<usize>().unwrap();
-
-        for _ in 0..times {
-            match direction {
-                Some("U") => head_position.1 += 1,
-                Some("D") => head_position.1 -= 1,
-                Some("R") => head_position.0 += 1,
-                Some("L") => head_position.0 -= 1,
-                _ => println!("Nothing..."),
-            }
-
-            let delta = (
-                (head_position.0 - tail_position.0),
-                (head_position.1 - tail_position.1),
-            );
-            let not_touching = delta.0.abs() > 1 || delta.1.abs() > 1;
-
-            if not_touching {
-                tail_position.0 += 1 * delta.0.signum();
-                tail_position.1 += 1 * delta.1.signum();
-                visited.insert(tail_position);
-            }
-        }
-    }
-    Some(visited.len())
+    get_tail_visited_positions(input, &2)
 }
 
 pub fn part_two(input: &str) -> Option<usize> {
+    get_tail_visited_positions(input, &10)
+}
+
+fn get_tail_visited_positions(input: &str, rope_length: &usize) -> Option<usize> {
     let mut visited = HashSet::<Position>::from([(0, 0)]);
     let mut rope = VecDeque::<Position>::new();
 
-    for _ in 0..10 {
+    for _ in 0..*rope_length {
         rope.push_front((0, 0))
     }
 
@@ -56,11 +29,11 @@ pub fn part_two(input: &str) -> Option<usize> {
                 Some("D") => head_position.1 -= 1,
                 Some("R") => head_position.0 += 1,
                 Some("L") => head_position.0 -= 1,
-                _ => println!("Nothing..."),
+                _ => unreachable!("Invalid direction"),
             }
             rope.push_back(head_position);
 
-            for _ in 0..9 {
+            for _ in 0..*rope_length - 1 {
                 let mut tail_position = rope.pop_front().unwrap();
                 let head_position = rope.back().unwrap();
 
