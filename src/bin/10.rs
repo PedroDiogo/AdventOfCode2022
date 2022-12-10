@@ -2,55 +2,59 @@ use itertools::Itertools;
 
 pub fn part_one(input: &str) -> Option<usize> {
     let mut cycle: usize = 0;
-    let mut registers = vec![1];
+    let mut x = 1;
     let mut result = 0;
-    for command in input.lines() {
-        let old_cycle = cycle;
-        let old_registers = registers.clone();
 
+    for command in input.lines() {
         let parts = command.split_ascii_whitespace().collect_vec();
-        cycle += match parts[..] {
-            ["noop"] => 1,
-            ["addx", a] => addx(a, &mut registers),
+        let (cycle_inc, new_x) = match parts[..] {
+            ["noop"] => (1, x),
+            ["addx", a] => addx(a, &x),
             _ => unimplemented!(),
         };
+        let new_cycle = cycle + cycle_inc;
 
-        if (cycle + 20) % 40 == 0 {
-            result += cycle * old_registers[0] as usize;
-        } else if ((cycle + 20) % 40) < ((old_cycle + 20) % 40) {
-            result += (cycle - ((cycle + 20) % 40)) * old_registers[0] as usize;
+        if (new_cycle + 20) % 40 == 0 {
+            result += new_cycle * x as usize;
+        } else if ((new_cycle + 20) % 40) < ((cycle + 20) % 40) {
+            result += (new_cycle - ((new_cycle + 20) % 40)) * x as usize;
         }
+
+        cycle = new_cycle;
+        x = new_x;
     }
     Some(result)
 }
 
-pub fn part_two(input: &str) -> Option<usize> {
+pub fn part_two(input: &str) -> Option<String> {
     let mut cycle: usize = 0;
-    let mut registers = vec![1];
-    for command in input.lines() {
-        let old_cycle = cycle;
-        let old_registers = registers.clone();
+    let mut x = 1;
+    let mut crt = vec!['.'; 40 * 6];
 
+    for command in input.lines() {
         let parts = command.split_ascii_whitespace().collect_vec();
-        cycle += match parts[..] {
-            ["noop"] => 1,
-            ["addx", a] => addx(a, &mut registers),
+        let (cycle_inc, new_x) = match parts[..] {
+            ["noop"] => (1, x),
+            ["addx", a] => addx(a, &x),
             _ => unimplemented!(),
         };
+        let new_cycle = cycle + cycle_inc;
 
-        for c in old_cycle..cycle {
+        for c in cycle..new_cycle {
             let position = c % 40;
-            if (position as isize - old_registers[0]).abs() < 2 {
-                print!("#")
-            } else {
-                print!(".");
-            }
-            if position == 39 {
-                println!("");
+            if (position as isize - x).abs() < 2 {
+                crt[c] = '#';
             }
         }
+
+        cycle = new_cycle;
+        x = new_x;
     }
-    None
+    Some(
+        crt.chunks(40)
+            .map(|c| c.iter().collect::<String>())
+            .join("\n"),
+    )
 }
 
 fn main() {
@@ -59,10 +63,9 @@ fn main() {
     advent_of_code::solve!(2, part_two, input);
 }
 
-fn addx(value: &str, registers: &mut [isize]) -> usize {
+fn addx(value: &str, x: &isize) -> (usize, isize) {
     let value = value.parse::<isize>().unwrap();
-    registers[0] += value;
-    2
+    (2, x + value)
 }
 
 #[cfg(test)]
@@ -78,6 +81,14 @@ mod tests {
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 10);
-        assert_eq!(part_two(&input), None);
+        let output = String::from(
+            "##..##..##..##..##..##..##..##..##..##..
+###...###...###...###...###...###...###.
+####....####....####....####....####....
+#####.....#####.....#####.....#####.....
+######......######......######......####
+#######.......#######.......#######.....",
+        );
+        assert_eq!(part_two(&input), Some(output));
     }
 }
