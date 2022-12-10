@@ -25,6 +25,31 @@ pub fn part_one(input: &str) -> Option<usize> {
 }
 
 pub fn part_two(input: &str) -> Option<usize> {
+    let mut cycle: usize = 0;
+    let mut registers = vec![1];
+    for command in input.lines() {
+        let old_cycle = cycle;
+        let old_registers = registers.clone();
+
+        let parts = command.split_ascii_whitespace().collect_vec();
+        cycle += match parts[..] {
+            ["noop"] => 1,
+            ["addx", a] => addx(a, &mut registers),
+            _ => unimplemented!(),
+        };
+
+        for c in old_cycle..cycle {
+            let position = c % 40;
+            if (position as isize - old_registers[0]).abs() < 2 {
+                print!("#")
+            } else {
+                print!(".");
+            }
+            if position == 39 {
+                println!("");
+            }
+        }
+    }
     None
 }
 
