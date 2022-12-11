@@ -49,7 +49,7 @@ pub fn part_one(input: &str) -> Option<usize> {
 
     let mut monkeys = monkeys
         .map(|monkey_lines| {
-            let mut monkey_lines = monkey_lines.lines().collect_vec();
+            let monkey_lines = monkey_lines.lines().collect_vec();
             let items = VecDeque::from(monkey_lines[1].replace(",", "").numbers());
 
             let operation = match monkey_lines[2]
@@ -104,7 +104,66 @@ pub fn part_one(input: &str) -> Option<usize> {
 }
 
 pub fn part_two(input: &str) -> Option<usize> {
-    None
+    let monkeys = input.split("\n\n");
+
+    let mut monkeys = monkeys
+        .map(|monkey_lines| {
+            let monkey_lines = monkey_lines.lines().collect_vec();
+            let items = VecDeque::from(monkey_lines[1].replace(",", "").numbers());
+
+            let operation = match monkey_lines[2]
+                .split(" = ")
+                .skip(1)
+                .next()
+                .unwrap()
+                .split_whitespace()
+                .collect_vec()[..]
+            {
+                ["old", "*", "old"] => Operation::Square,
+                ["old", "+", x] => Operation::Add(x.parse().unwrap()),
+                ["old", "*", x] => Operation::Multiply(x.parse().unwrap()),
+                _ => unimplemented!(),
+            };
+
+            let test = Test {
+                divisible_by: *monkey_lines[3].numbers().first().unwrap(),
+                return_if_true: *monkey_lines[4].numbers().first().unwrap(),
+                return_if_false: *monkey_lines[5].numbers().first().unwrap(),
+            };
+
+            Monkey {
+                items,
+                inspections: 0,
+                operation,
+                test,
+            }
+        })
+        .collect_vec();
+
+    // LCM * HCF = Product of all numbers
+    // inputs are are co-prime so HCF is 1
+    let lcm: usize = monkeys.iter().map(|m| m.test.divisible_by).product();
+
+    for _round in 0..10000 {
+        for monkey_idx in 0..monkeys.len() {
+            let mut monkey = monkeys[monkey_idx].clone();
+            while !monkey.items.is_empty() {
+                monkey.inspections += 1;
+                let item = monkey.items.pop_front().unwrap();
+                let item = (monkey.operation.result(&item)) % lcm;
+                monkeys[monkey.test.result(&item)].items.push_back(item);
+            }
+            monkeys[monkey_idx] = monkey;
+        }
+    }
+
+    Some(
+        monkeys
+            .iter()
+            .sorted_by(|a, b| Ord::cmp(&b.inspections, &a.inspections))
+            .take(2)
+            .fold(1, |mul, item| mul * item.inspections),
+    )
 }
 
 fn main() {
@@ -126,6 +185,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 11);
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input), Some(2713310158));
     }
 }
