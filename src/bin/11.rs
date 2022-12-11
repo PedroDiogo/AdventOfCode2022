@@ -45,41 +45,7 @@ impl Test {
 }
 
 pub fn part_one(input: &str) -> Option<usize> {
-    let monkeys = input.split("\n\n");
-
-    let mut monkeys = monkeys
-        .map(|monkey_lines| {
-            let monkey_lines = monkey_lines.lines().collect_vec();
-            let items = VecDeque::from(monkey_lines[1].replace(",", "").numbers());
-
-            let operation = match monkey_lines[2]
-                .split(" = ")
-                .skip(1)
-                .next()
-                .unwrap()
-                .split_whitespace()
-                .collect_vec()[..]
-            {
-                ["old", "*", "old"] => Operation::Square,
-                ["old", "+", x] => Operation::Add(x.parse().unwrap()),
-                ["old", "*", x] => Operation::Multiply(x.parse().unwrap()),
-                _ => unimplemented!(),
-            };
-
-            let test = Test {
-                divisible_by: *monkey_lines[3].numbers().first().unwrap(),
-                return_if_true: *monkey_lines[4].numbers().first().unwrap(),
-                return_if_false: *monkey_lines[5].numbers().first().unwrap(),
-            };
-
-            Monkey {
-                items,
-                inspections: 0,
-                operation,
-                test,
-            }
-        })
-        .collect_vec();
+    let mut monkeys = parse_input(input);
 
     for _round in 0..20 {
         for monkey_idx in 0..monkeys.len() {
@@ -104,41 +70,7 @@ pub fn part_one(input: &str) -> Option<usize> {
 }
 
 pub fn part_two(input: &str) -> Option<usize> {
-    let monkeys = input.split("\n\n");
-
-    let mut monkeys = monkeys
-        .map(|monkey_lines| {
-            let monkey_lines = monkey_lines.lines().collect_vec();
-            let items = VecDeque::from(monkey_lines[1].replace(",", "").numbers());
-
-            let operation = match monkey_lines[2]
-                .split(" = ")
-                .skip(1)
-                .next()
-                .unwrap()
-                .split_whitespace()
-                .collect_vec()[..]
-            {
-                ["old", "*", "old"] => Operation::Square,
-                ["old", "+", x] => Operation::Add(x.parse().unwrap()),
-                ["old", "*", x] => Operation::Multiply(x.parse().unwrap()),
-                _ => unimplemented!(),
-            };
-
-            let test = Test {
-                divisible_by: *monkey_lines[3].numbers().first().unwrap(),
-                return_if_true: *monkey_lines[4].numbers().first().unwrap(),
-                return_if_false: *monkey_lines[5].numbers().first().unwrap(),
-            };
-
-            Monkey {
-                items,
-                inspections: 0,
-                operation,
-                test,
-            }
-        })
-        .collect_vec();
+    let mut monkeys = parse_input(input);
 
     // LCM * HCF = Product of all numbers
     // inputs are are co-prime so HCF is 1
@@ -170,6 +102,44 @@ fn main() {
     let input = &advent_of_code::read_file("inputs", 11);
     advent_of_code::solve!(1, part_one, input);
     advent_of_code::solve!(2, part_two, input);
+}
+
+fn parse_input(input: &str) -> Vec<Monkey> {
+    let monkeys = input.split("\n\n");
+
+    monkeys
+        .map(|monkey_lines| {
+            let monkey_lines = monkey_lines.lines().collect_vec();
+            let items = VecDeque::from(monkey_lines[1].replace(",", "").numbers());
+
+            let operation = match monkey_lines[2]
+                .split(" = ")
+                .skip(1)
+                .next()
+                .unwrap()
+                .split_whitespace()
+                .collect_vec()[..]
+            {
+                ["old", "*", "old"] => Operation::Square,
+                ["old", "+", x] => Operation::Add(x.parse().unwrap()),
+                ["old", "*", x] => Operation::Multiply(x.parse().unwrap()),
+                _ => unimplemented!(),
+            };
+
+            let test = Test {
+                divisible_by: *monkey_lines[3].numbers().first().unwrap(),
+                return_if_true: *monkey_lines[4].numbers().first().unwrap(),
+                return_if_false: *monkey_lines[5].numbers().first().unwrap(),
+            };
+
+            Monkey {
+                items,
+                inspections: 0,
+                operation,
+                test,
+            }
+        })
+        .collect_vec()
 }
 
 #[cfg(test)]
