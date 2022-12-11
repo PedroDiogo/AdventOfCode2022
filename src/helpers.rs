@@ -3,7 +3,9 @@
  * Example import from this file: `use advent_of_code::helpers::example_fn;`.
  */
 
-use std::{collections::HashSet, ops::RangeInclusive};
+use std::{collections::HashSet, ops::RangeInclusive, str::FromStr};
+
+use itertools::Itertools;
 
 pub trait First<T> {
     fn first(&self) -> Option<&T>;
@@ -43,5 +45,17 @@ impl<T: Copy + PartialOrd + std::ops::Sub<Output = T>> FullyContains<T> for Rang
 
         largest_range.start() <= smallest_range.start()
             && largest_range.end() >= smallest_range.end()
+    }
+}
+
+pub trait GetNumbers {
+    fn numbers(&self) -> Vec<usize>;
+}
+
+impl GetNumbers for str {
+    fn numbers(&self) -> Vec<usize> {
+        self.split_whitespace()
+            .filter_map(|w| w.parse::<usize>().ok())
+            .collect_vec()
     }
 }
