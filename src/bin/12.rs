@@ -7,7 +7,6 @@ struct AStar {
     node: Position,
     f: usize,
     g: usize,
-    // h: usize,
 }
 
 impl Ord for AStar {
@@ -25,6 +24,35 @@ impl PartialOrd for AStar {
 const VALID_POSITION_DELTAS: [(isize, isize); 4] = [(0, -1), (-1, 0), (0, 1), (1, 0)];
 
 pub fn part_one(input: &str) -> Option<usize> {
+    let (map, start, end) = parse_input(input);
+    a_star(&map, &start, &end)
+}
+
+pub fn part_two(input: &str) -> Option<usize> {
+    let (map, _, end) = parse_input(input);
+    let mut candidates: Vec<Position> = vec![];
+
+    for m in 0..map.len() {
+        for n in 0..map[0].len() {
+            if map[m][n] == 'a' {
+                candidates.push((m, n));
+            }
+        }
+    }
+
+    let mut min = usize::MAX;
+    for candidate in &candidates {
+        if let Some(result) = a_star(&map, candidate, &end) {
+            if result < min {
+                min = result;
+            }
+        }
+    }
+
+    Some(min)
+}
+
+fn parse_input(input: &str) -> (Vec<Vec<char>>, Position, Position) {
     let mut map: Vec<Vec<char>> = input.lines().map(|line| line.chars().collect()).collect();
 
     let mut start: Position = (0, 0);
@@ -41,41 +69,28 @@ pub fn part_one(input: &str) -> Option<usize> {
     }
     map[start.0][start.1] = 'a';
     map[end.0][end.1] = 'z';
+    (map, start, end)
+}
 
-    println!("{:?} -> {:?}", start, end);
-
+fn a_star(map: &Vec<Vec<char>>, start: &Position, end: &Position) -> Option<usize> {
     let mut open: BinaryHeap<AStar> = BinaryHeap::from([AStar {
-        node: start,
+        node: *start,
         f: 0,
         g: 0,
     }]);
-    let mut open_map: HashMap<Position, usize> = HashMap::from([(start, 0)]);
+    let (m_max, n_max) = (map.len(), map[0].len());
+
+    let mut open_map: HashMap<Position, usize> = HashMap::from([(*start, 0)]);
     let mut closed: HashSet<Position> = HashSet::new();
-    let mut processed = 0;
 
     while !open.is_empty() {
-        processed += 1;
         let q = open.pop().unwrap();
         open_map.remove(&q.node);
         closed.insert(q.node);
 
-        if q.node == end {
+        if &q.node == end {
             return Some(q.f);
         }
-
-        // if processed % 1000 == 0 {
-        //     println!("Processed: {:?}. Q: {:?}", processed, q);
-        //     for m in 0..m_max {
-        //         for n in 0..n_max {
-        //             let a = match closed.get(&(m, n)) {
-        //                 Some(_True) => '#',
-        //                 _ => '.',
-        //             };
-        //             print!("{}", a);
-        //         }
-        //         println!("");
-        //     }
-        // }
 
         for delta in VALID_POSITION_DELTAS {
             let sucessor_pos = (q.node.0 as isize + delta.0, q.node.1 as isize + delta.1);
@@ -98,12 +113,10 @@ pub fn part_one(input: &str) -> Option<usize> {
             let h: usize = ((sucessor_pos.0 as isize - end.0 as isize).abs()
                 + (sucessor_pos.1 as isize - end.1 as isize).abs())
                 as usize;
-            // let h = ((sucessor_pos.0 as isize - end.0 as isize).pow(2)
-            //     + (sucessor_pos.1 as isize - end.1 as isize).pow(2)) as usize;
             let f = g + h;
 
             if let Some(open_node) = open_map.get(&sucessor_pos) {
-                if open_node < &g {
+                if open_node < &f {
                     continue;
                 }
             }
@@ -113,14 +126,10 @@ pub fn part_one(input: &str) -> Option<usize> {
                 f,
                 g,
             });
-            open_map.insert(sucessor_pos, g);
+            open_map.insert(sucessor_pos, f);
         }
     }
 
-    None
-}
-
-pub fn part_two(input: &str) -> Option<usize> {
     None
 }
 
@@ -143,6 +152,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 12);
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input), Some(29));
     }
 }
