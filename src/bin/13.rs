@@ -1,7 +1,8 @@
-use std::{cmp::Ordering, ops::Index, vec};
+use std::{cmp::Ordering, vec};
 
 use itertools::Itertools;
 use regex::Regex;
+use serde_json::Value;
 
 type Packet = Vec<Item>;
 
@@ -11,23 +12,23 @@ enum Item {
     List(Packet),
 }
 
-impl Ord for Item {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        match (self, other) {
-            (Item::Number(n_self), Item::Number(n_other)) => n_self.cmp(n_other),
-            (n_self @ Item::Number(_), l_other @ Item::List(_)) => {
-                Item::List(vec![n_self.clone()]).cmp(l_other)
+    fn cmp_value(left: &Value, right: &Value) -> std::cmp::Ordering {
+        match (left, right) {
+            (Value::Number(n_self), Value::Number(n_other)) => n_self.as_u64().cmp(&n_other.as_u64()),
+            (n_self @ Value::Number(_), l_other @ Value::Array(_)) => {
+                cmp_value(&Value::Array(vec![n_self.clone()]), l_other)
             }
-            (l_self @ Item::List(_), n_other @ Item::Number(_)) => {
-                l_self.cmp(&Item::List(vec![n_other.clone()]))
+
+            (l_self @ Value::Array(_), n_other @ Value::Number(_)) => {
+                cmp_value(l_self, &Value::Array(vec![n_other.clone()]))
             }
-            (Item::List(l_self), Item::List(l_other)) => {
+            (Value::Array(l_self), Value::Array(l_other)) => {
                 let mut order = Ordering::Equal;
                 for i in 0..l_self.len().max(l_other.len()) {
                     order = match (l_self.get(i), l_other.get(i)) {
-                        (Some(_), None) => Ordering::Less,
-                        (None, Some(_)) => Ordering::Greater,
-                        (Some(s), Some(o)) => s.cmp(o),
+                        (Some(_), None) =>  Ordering::Greater,
+                        (None, Some(_)) =>  Ordering::Less,
+                        (Some(s), Some(o)) => cmp_value(s, o),
                         _ => unimplemented!(),
                     };
 
@@ -37,68 +38,35 @@ impl Ord for Item {
                 }
                 order
             }
-        }
+         _ => unimplemented!()
+            }
     }
-}
-
-impl PartialOrd for Item {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
 
 pub fn part_one(input: &str) -> Option<usize> {
+    let mut idx = 1;
+    let mut sum = 0;
     for block in input.split("\n\n") {
         let mut block = block.lines();
         let packet1 = block.next();
         let packet1 = parse_packet(packet1);
         let packet2 = block.next();
         let packet2 = parse_packet(packet2);
-        println!("{:?} < {:?} = {}", packet1, packet2, packet1 < packet2);
+        if cmp_value(&packet1, &packet2) == Ordering::Less {
+            sum += idx;
+        }
+        idx += 1;
     }
-    None
+    Some(sum) 
 }
 
 pub fn part_two(input: &str) -> Option<usize> {
     None
 }
 
-fn parse_packet(input: Option<&str>) -> Vec<Item> {
-    // let mut packet: Packet = vec![];
-    // let mut queue = vec![];
-    // if input.is_none() {
-    //     return packet;
-    // }
-    // println!("Input: {}", input.unwrap());
-    // let input = input
-    //     .unwrap()
-    //     .split_inclusive(&[',', '[', ']'])
-    //     .flat_map(|s| s.split("]"))
-    //     .filter(|s| *s != ",")
-    //     .map(|s| s.replace(",", ""));
-    // println!("{:?}", input.clone().collect_vec());
+fn parse_packet(input: Option<&str>) -> Value {
+    serde_json::from_str(input.unwrap()).unwrap()
+} 
 
-    // for s in input {
-    //     match s.as_str() {
-    //         "[" => queue.push(Item::List(vec![])),
-    //         "" => {
-    //             if let Some(queue_elem) = queue.pop() {
-    //                 packet.push(queue_elem);
-    //             }
-    //         }
-    //         x => {
-    //             let x = x.parse::<usize>().unwrap();
-    //             match queue.last_mut() {
-    //                 Some(Item::List(list)) => list.push(Item::Number(x)),
-    //                 _ => unimplemented!(),
-    //             }
-    //         }
-    //     }
-    // }
-    // packet
-
-    vec![]
-}
 
 fn main() {
     let input = &advent_of_code::read_file("inputs", 13);
@@ -113,7 +81,7 @@ mod tests {
     #[test]
     fn test_part_one() {
         let input = advent_of_code::read_file("examples", 13);
-        assert_eq!(part_one(&input), None);
+        assert_eq!(part_one(&input), Some(13));
     }
 
     #[test]
