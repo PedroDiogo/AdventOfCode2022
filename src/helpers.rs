@@ -3,7 +3,7 @@
  * Example import from this file: `use advent_of_code::helpers::example_fn;`.
  */
 
-use std::{collections::HashSet, ops::RangeInclusive};
+use std::{collections::HashSet, ops::RangeInclusive, str::FromStr};
 
 use itertools::Itertools;
 
@@ -48,14 +48,21 @@ impl<T: Copy + PartialOrd + std::ops::Sub<Output = T>> FullyContains<T> for Rang
     }
 }
 
-pub trait GetNumbers {
-    fn numbers(&self) -> Vec<usize>;
+pub trait GetNumbers<T: FromStr> {
+    fn numbers(&self) -> Vec<T>;
+    fn number_by_separators(&self, separators: &[char]) -> Vec<T>;
 }
 
-impl GetNumbers for str {
-    fn numbers(&self) -> Vec<usize> {
+impl<T: FromStr> GetNumbers<T> for str {
+    fn numbers(&self) -> Vec<T> {
         self.split_whitespace()
-            .filter_map(|w| w.parse::<usize>().ok())
+            .filter_map(|w| w.parse::<T>().ok())
+            .collect_vec()
+    }
+
+    fn number_by_separators(&self, separators: &[char]) -> Vec<T> {
+        self.split(separators)
+            .filter_map(|w| w.parse::<T>().ok())
             .collect_vec()
     }
 }
