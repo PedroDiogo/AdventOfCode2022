@@ -3,11 +3,7 @@
  * Example import from this file: `use advent_of_code::helpers::example_fn;`.
  */
 
-use std::{
-    collections::{btree_map::Range, HashSet},
-    ops::RangeInclusive,
-    str::FromStr,
-};
+use std::{collections::HashSet, ops::RangeInclusive, str::FromStr};
 
 use itertools::Itertools;
 
