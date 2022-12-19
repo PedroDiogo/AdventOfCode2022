@@ -3,7 +3,11 @@
  * Example import from this file: `use advent_of_code::helpers::example_fn;`.
  */
 
-use std::{collections::HashSet, ops::RangeInclusive, str::FromStr};
+use std::{
+    collections::{btree_map::Range, HashSet},
+    ops::RangeInclusive,
+    str::FromStr,
+};
 
 use itertools::Itertools;
 
@@ -45,6 +49,20 @@ impl<T: Copy + PartialOrd + std::ops::Sub<Output = T>> FullyContains<T> for Rang
 
         largest_range.start() <= smallest_range.start()
             && largest_range.end() >= smallest_range.end()
+    }
+}
+
+pub trait Union<T> {
+    fn union(&self, other_range: &RangeInclusive<T>) -> Option<RangeInclusive<T>>;
+}
+
+impl<T: PartialOrd + Ord + Copy> Union<T> for RangeInclusive<T> {
+    fn union(&self, other_range: &RangeInclusive<T>) -> Option<RangeInclusive<T>> {
+        if !self.overlaps(other_range) {
+            return None;
+        }
+
+        Some(*self.start().min(other_range.start())..=*self.end().max(other_range.end()))
     }
 }
 
