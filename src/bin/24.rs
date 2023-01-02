@@ -115,44 +115,12 @@ fn print_blizzards(blizzards: &HashSet<(Position, char)>, box_size: &(usize, usi
     }
 }
 
-pub fn part_one(input: &str) -> Option<usize> {
-    let blizzards: HashSet<(Position, char)> = input
-        .lines()
-        .enumerate()
-        .flat_map(|(y, line)| {
-            line.char_indices()
-                .filter(|(_x, c)| c != &' ' && c != &'.' && c != &'#')
-                .map(|(x, c)| ((x as isize, y as isize), c))
-                .collect::<Vec<(Position, char)>>()
-        })
-        .collect();
-    // println!("{:?}", blizzards);
-    let mut entrance: Position = (0, 0);
-    let mut exit: Position = (0, 0);
-    let box_size = (
-        input.lines().next().unwrap().trim().len(),
-        input.lines().map(|_| 1).sum(),
-    );
-
-    for (y, line) in input.lines().enumerate() {
-        if y == 0 {
-            entrance = (
-                line.char_indices().find(|(_, c)| c == &'.').unwrap().0 as isize,
-                y as isize,
-            );
-        }
-        if y + 1 == box_size.1 {
-            exit = (
-                line.char_indices().find(|(_, c)| c == &'.').unwrap().0 as isize,
-                y as isize,
-            );
-        }
-    }
-    // println!(
-    //     "box: {:?}, entrance: {:?}, exit: {:?}",
-    //     box_size, entrance, exit
-    // );
-
+fn go_from_start_to_end(
+    blizzards: &HashSet<(Position, char)>,
+    box_size: &(usize, usize),
+    entrance: &Position,
+    exit: &Position,
+) -> (usize, HashSet<(Position, char)>) {
     let mut blizzards_by_minute: HashMap<usize, HashSet<(Position, char)>> = HashMap::new();
     blizzards_by_minute.insert(0, blizzards.clone());
     blizzards_by_minute.insert(1, next_blizzards(&blizzards, &box_size));
@@ -194,10 +162,11 @@ pub fn part_one(input: &str) -> Option<usize> {
             visited.insert(a);
             let queue_minute = a.0 + 1;
             // println!("Minute: {}", queue_minute);
-            let last_blizzards = &blizzards_by_minute[&a.0].clone();
-            let queue_blizzards = blizzards_by_minute
-                .entry(queue_minute)
-                .or_insert(next_blizzards(last_blizzards, &box_size));
+            if !blizzards_by_minute.contains_key(&queue_minute) {
+                let last_blizzards = &blizzards_by_minute[&a.0].clone();
+                blizzards_by_minute.insert(queue_minute, next_blizzards(last_blizzards, &box_size));
+            }
+            let queue_blizzards = blizzards_by_minute.get(&queue_minute).unwrap();
             let queue_blizzards_coords = blizzards_coords_by_minute
                 .entry(queue_minute)
                 .or_insert(blizzards_coords(&queue_blizzards));
@@ -215,8 +184,8 @@ pub fn part_one(input: &str) -> Option<usize> {
             // );
             // print_blizzards(&queue_blizzards, &box_size);
             for n in valid_neighbours {
-                if n.1 == exit {
-                    return Some(n.0);
+                if n.1 == *exit {
+                    return (n.0, (&blizzards_by_minute[&queue_minute]).clone());
                 }
                 if !visited.contains(&n) {
                     queue.push_back(n);
@@ -228,13 +197,86 @@ pub fn part_one(input: &str) -> Option<usize> {
     }
 }
 
+pub fn part_one(input: &str) -> Option<usize> {
+    let blizzards: HashSet<(Position, char)> = input
+        .lines()
+        .enumerate()
+        .flat_map(|(y, line)| {
+            line.char_indices()
+                .filter(|(_x, c)| c != &' ' && c != &'.' && c != &'#')
+                .map(|(x, c)| ((x as isize, y as isize), c))
+                .collect::<Vec<(Position, char)>>()
+        })
+        .collect();
+    let mut entrance: Position = (0, 0);
+    let mut exit: Position = (0, 0);
+    let box_size = (
+        input.lines().next().unwrap().trim().len(),
+        input.lines().map(|_| 1).sum(),
+    );
+
+    for (y, line) in input.lines().enumerate() {
+        if y == 0 {
+            entrance = (
+                line.char_indices().find(|(_, c)| c == &'.').unwrap().0 as isize,
+                y as isize,
+            );
+        }
+        if y + 1 == box_size.1 {
+            exit = (
+                line.char_indices().find(|(_, c)| c == &'.').unwrap().0 as isize,
+                y as isize,
+            );
+        }
+    }
+
+    Some(go_from_start_to_end(&blizzards, &box_size, &entrance, &exit).0)
+}
+
 pub fn part_two(input: &str) -> Option<usize> {
-    None
+    let blizzards: HashSet<(Position, char)> = input
+        .lines()
+        .enumerate()
+        .flat_map(|(y, line)| {
+            line.char_indices()
+                .filter(|(_x, c)| c != &' ' && c != &'.' && c != &'#')
+                .map(|(x, c)| ((x as isize, y as isize), c))
+                .collect::<Vec<(Position, char)>>()
+        })
+        .collect();
+    let mut entrance: Position = (0, 0);
+    let mut exit: Position = (0, 0);
+    let box_size = (
+        input.lines().next().unwrap().trim().len(),
+        input.lines().map(|_| 1).sum(),
+    );
+
+    for (y, line) in input.lines().enumerate() {
+        if y == 0 {
+            entrance = (
+                line.char_indices().find(|(_, c)| c == &'.').unwrap().0 as isize,
+                y as isize,
+            );
+        }
+        if y + 1 == box_size.1 {
+            exit = (
+                line.char_indices().find(|(_, c)| c == &'.').unwrap().0 as isize,
+                y as isize,
+            );
+        }
+    }
+
+    let first_start_to_end = go_from_start_to_end(&blizzards, &box_size, &entrance, &exit);
+    let first_end_to_start =
+        go_from_start_to_end(&first_start_to_end.1, &box_size, &exit, &entrance);
+    let second_start_to_end =
+        go_from_start_to_end(&first_end_to_start.1, &box_size, &entrance, &exit);
+    Some(first_start_to_end.0 + first_end_to_start.0 + second_start_to_end.0)
 }
 
 fn main() {
     let input = &advent_of_code::read_file("inputs", 24);
-    advent_of_code::solve!(1, part_one, input);
+    // advent_of_code::solve!(1, part_one, input);
     advent_of_code::solve!(2, part_two, input);
 }
 
@@ -251,6 +293,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 24);
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input), Some(54));
     }
 }
